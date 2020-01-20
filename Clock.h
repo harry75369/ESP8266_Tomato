@@ -11,10 +11,14 @@ struct TomatoClock {
   };
   State state;
   unsigned long timeStamp;
+  int nCycles;
 
-  TomatoClock() : state(CLK_STOPPED) {}
+  TomatoClock() : state(CLK_STOPPED), nCycles(0) {}
 
-  void startWorking() {
+  void startWorking(bool addCycle = true) {
+    if (addCycle) {
+      nCycles += 1;
+    }
     state = CLK_WORKING;
     timeStamp = millis();
   }
@@ -25,7 +29,12 @@ struct TomatoClock {
   }
 
   void stop() {
+    nCycles -= 1;
     state = CLK_STOPPED;
+  }
+
+  int getNCycles() {
+    return nCycles;
   }
 
   bool isWorking() {

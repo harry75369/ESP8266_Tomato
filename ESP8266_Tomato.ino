@@ -45,6 +45,25 @@ Ticker ledTicker;
 Ticker musicTicker;
 Ticker clockTicker;
 
+void tellCycles(int counter) {
+  static int lastCounter = 0;
+  if (lastCounter == counter) {
+    return;
+  } else {
+    lastCounter = counter;
+  }
+  for (int i = 0; i < counter; i++) {
+    tone(beeperPin, NOTE_D3);
+    delay(200);
+    noTone(beeperPin);
+  }
+  if (counter > 0) {
+    tone(beeperPin, NOTE_D1);
+    delay(200);
+    noTone(beeperPin);
+  }
+}
+
 void setup() {
   // outputs
   pinMode(redLedPin, OUTPUT);
@@ -75,7 +94,7 @@ void setup() {
       if ((millis() - tomatoClock.timeStamp) > 1000 * 60 * cfg.workMinutes) {
         greenLed.turnOff();
         redLed.turnOn();
-        huluwa.play();
+        huluwa.playFromStart();
         huanlesong.stop();
         tomatoClock.startResting();
       }
@@ -84,8 +103,16 @@ void setup() {
         greenLed.turnOff();
         redLed.turnOff();
         huluwa.stop();
-        huanlesong.play();
+        huanlesong.stop();
         tomatoClock.stop();
+
+        int remainingCycles = tomatoClock.getNCycles();
+        if (remainingCycles > 0) {
+          greenLed.turnOn();
+          tomatoClock.startWorking(false);
+        } else {
+          huanlesong.playFromStart();
+        }
       }
     }
   });
@@ -104,6 +131,7 @@ void loop() {
     huanlesong.stop();
     tomatoClock.startWorking();
   }
+  tellCycles(tomatoClock.getNCycles());
 
   // turn off notification music
   if (redButton.isPressed()) {

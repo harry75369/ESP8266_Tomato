@@ -66,6 +66,11 @@ public:
     playCurrNote();
   }
 
+  void playFromStart() {
+    currNote = 0;
+    play();
+  }
+
   void stop() {
     state = 0;
     noTone(pin);
