@@ -97,6 +97,26 @@ public:
   }
 };
 
+static Music xiaoxingxing(
+  {
+    NOTE_D1,NOTE_D1,NOTE_D5,NOTE_D5,NOTE_D6,NOTE_D6,NOTE_D5,NOTE_D0,
+    NOTE_D4,NOTE_D4,NOTE_D3,NOTE_D3,NOTE_D2,NOTE_D2,NOTE_D1,NOTE_D0,
+    NOTE_D5,NOTE_D5,NOTE_D4,NOTE_D4,NOTE_D3,NOTE_D3,NOTE_D2,NOTE_D0,
+    NOTE_D5,NOTE_D5,NOTE_D4,NOTE_D4,NOTE_D3,NOTE_D3,NOTE_D2,NOTE_D0,
+    NOTE_D1,NOTE_D1,NOTE_D5,NOTE_D5,NOTE_D6,NOTE_D6,NOTE_D5,NOTE_D0,
+    NOTE_D4,NOTE_D4,NOTE_D3,NOTE_D3,NOTE_D2,NOTE_D2,NOTE_D1,NOTE_D0,
+    NOTE_D0,
+  },
+  {
+    1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,
+    5,
+  });
+
 static Music huluwa(
   {
     NOTE_DH1,NOTE_D6,NOTE_D5,NOTE_D6,NOTE_D0,
@@ -149,28 +169,6 @@ static Music huluwa(
     5,
   });
 
-static Music xiaoxingxing(
-  {
-    NOTE_D1,NOTE_D1,NOTE_D5,NOTE_D5,NOTE_D6,NOTE_D6,NOTE_D5,NOTE_D0,
-    NOTE_D4,NOTE_D4,NOTE_D3,NOTE_D3,NOTE_D2,NOTE_D2,NOTE_D1,NOTE_D0,
-    NOTE_D5,NOTE_D5,NOTE_D4,NOTE_D4,NOTE_D3,NOTE_D3,NOTE_D2,NOTE_D0,
-    NOTE_D5,NOTE_D5,NOTE_D4,NOTE_D4,NOTE_D3,NOTE_D3,NOTE_D2,NOTE_D0,
-    NOTE_D1,NOTE_D1,NOTE_D5,NOTE_D5,NOTE_D6,NOTE_D6,NOTE_D5,NOTE_D0,
-    NOTE_D4,NOTE_D4,NOTE_D3,NOTE_D3,NOTE_D2,NOTE_D2,NOTE_D1,NOTE_D0,
-    NOTE_D0,
-  },
-  {
-    1,1,1,1,1,1,1,1,
-    1,1,1,1,1,1,1,1,
-    1,1,1,1,1,1,1,1,
-    1,1,1,1,1,1,1,1,
-    1,1,1,1,1,1,1,1,
-    1,1,1,1,1,1,1,1,
-    5,
-  });
-
-
-
 static Music huanlesong(
   {
     NOTE_D3,NOTE_D3,NOTE_D4,NOTE_D5,
@@ -208,5 +206,43 @@ static Music huanlesong(
     1,1,1,0.5,0.5,
     1,1,1,1,
     1+0.5,0.5,1+1,
+    5,
+  });
+
+static Music taiyangzhaochangshengqi(
+  {
+    NOTE_DL6,NOTE_D3,NOTE_D3,NOTE_D3,NOTE_D4,
+    NOTE_D3,NOTE_D3,NOTE_D4,NOTE_D5,
+    NOTE_D6,NOTE_D6,NOTE_D5,NOTE_D5,
+    NOTE_D3,
+    NOTE_DL6,NOTE_D2,NOTE_D2,NOTE_D2,NOTE_D3,
+    NOTE_D2,NOTE_D3,
+    NOTE_D5,NOTE_D3,NOTE_D5,NOTE_DL7,NOTE_D1,
+    NOTE_DL6,NOTE_DL6,NOTE_D1,NOTE_D3,
+    NOTE_D6,NOTE_D5,NOTE_D6,NOTE_D5,
+    NOTE_D6,NOTE_D5,NOTE_D6,NOTE_D5,NOTE_D5,
+    NOTE_D3,NOTE_D2,NOTE_D6,NOTE_D5,
+    NOTE_D3,NOTE_D2,NOTE_D3,
+    NOTE_D2,NOTE_D6,NOTE_D4,
+    NOTE_D3,NOTE_D2,NOTE_D3,NOTE_D5,NOTE_DL7,NOTE_D1,
+    NOTE_DL6,
+    NOTE_D0,
+  },
+  {
+    1,1,1,0.75,0.25,
+    2.5,0.5,0.5,0.5,
+    1.5,0.5,1,1,
+    4,
+    1,1,1,0.75,0.25,
+    2,2,
+    0.75,0.25,2,0.75,0.25,
+    5,1,1,1,
+    0.75,0.25,2.75,0.25,
+    0.75,0.25,2,0.75,0.25,
+    5,1,1,1,
+    0.75,0.25,4,
+    1,1,1,
+    0.75,0.25,1,1,0.75,0.25,
+    4,
     5,
   });

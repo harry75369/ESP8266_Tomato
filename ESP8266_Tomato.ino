@@ -64,6 +64,12 @@ void tellCycles(int counter) {
   }
 }
 
+void stopAllMusic() {
+  huluwa.stop();
+  huanlesong.stop();
+  taiyangzhaochangshengqi.stop();
+}
+
 void setup() {
   // outputs
   pinMode(redLedPin, OUTPUT);
@@ -77,38 +83,42 @@ void setup() {
   pinMode(blueButtonPin, INPUT_PULLUP);
   //pinMode(bleStatPin, INPUT);
 
+  // setup music pin
+  huluwa.setPin(beeperPin);
+  huanlesong.setPin(beeperPin);
+  taiyangzhaochangshengqi.setPin(beeperPin);
+
   // register tickers
   ledTicker.attach(0.02, [&]() {
     redLed.update();
     greenLed.update();
     blueLed.update();
   });
-  huluwa.setPin(beeperPin);
-  huanlesong.setPin(beeperPin);
   musicTicker.attach(0.02, [&]() {
     huluwa.update();
     huanlesong.update();
+    taiyangzhaochangshengqi.update();
   });
   clockTicker.attach(0.02, [&]() {
     if (tomatoClock.isWorking()) {
       if ((millis() - tomatoClock.timeStamp) > 1000 * 60 * cfg.workMinutes) {
         greenLed.turnOff();
         redLed.turnOn();
+        stopAllMusic();
         huluwa.playFromStart();
-        huanlesong.stop();
         tomatoClock.startResting();
       }
     } else if (tomatoClock.isResting()) {
       if ((millis() - tomatoClock.timeStamp) > 1000 * 60 * cfg.restMinutes) {
         greenLed.turnOff();
         redLed.turnOff();
-        huluwa.stop();
-        huanlesong.stop();
+        stopAllMusic();
         tomatoClock.stop();
 
         int remainingCycles = tomatoClock.getNCycles();
         if (remainingCycles > 0) {
           greenLed.turnOn();
+          taiyangzhaochangshengqi.playFromStart();
           tomatoClock.startWorking(false);
         } else {
           huanlesong.playFromStart();
@@ -127,16 +137,14 @@ void loop() {
   if (blueButton.isPressed()) {
     greenLed.turnOn();
     redLed.turnOff();
-    huluwa.stop();
-    huanlesong.stop();
+    stopAllMusic();
     tomatoClock.startWorking();
   }
   tellCycles(tomatoClock.getNCycles());
 
   // turn off notification music
   if (redButton.isPressed()) {
-    huluwa.stop();
-    huanlesong.stop();
+    stopAllMusic();
   }
 
   // live indicator
