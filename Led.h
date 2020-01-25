@@ -36,7 +36,7 @@ public:
     , lastTime(millis())
   {}
 
-  void blink(unsigned long interval = 1) {
+  void blink(float interval = 1.0) {
     if (millis() - lastTime >= 1000 * interval) {
       lastTime = millis();
       toggle();

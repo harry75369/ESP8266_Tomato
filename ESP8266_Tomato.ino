@@ -3,11 +3,17 @@
 #include "Led.h"
 #include "Clock.h"
 #include <Ticker.h>
+#include <ESP8266WiFi.h>
+#include <TZ.h>                         // TZ_Asia_Shanghai
+#include <time.h>                       // time() ctime()
 
 /// TODO
-/// 1. connect to wifi and sync datetime
+/// 1. connect to wifi and sync datetime [done]
 /// 2. keep record of tomato clock logs
 /// 3. setup web server to show logs
+
+#define WIFI_SSID "WIFI_SSID"
+#define WIFI_PASS "WIFI_PASS"
 
 // pin mappings for WeMos D1 mini
 const int d0 = D2;
@@ -44,6 +50,7 @@ TomatoClock tomatoClock;
 Ticker ledTicker;
 Ticker musicTicker;
 Ticker clockTicker;
+Ticker wifiTicker;
 
 void tellCycles(int counter) {
   static int lastCounter = 0;
@@ -130,9 +137,27 @@ void setup() {
   // debug console
   Serial.begin(115200);
   Serial.println("\nWelcome to ESP8266 Tomato Project!");
+
+  // init wifi and time
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(WIFI_SSID, WIFI_PASS);
+  wifiTicker.attach(0.02, [&]() {
+    if (WiFi.status() == WL_CONNECTED) {
+      Serial.print("Wifi connected: ");
+      Serial.println(WiFi.localIP());
+      wifiTicker.detach();
+      configTime(TZ_Asia_Shanghai, "cn.ntp.org.cn");
+    }
+  });
 }
 
 void loop() {
+  // wait until wifi is ready
+  if (WiFi.status() != WL_CONNECTED) {
+    blueLed.blink(0.1);
+    return;
+  }
+
   // start working
   if (blueButton.isPressed()) {
     greenLed.turnOn();
