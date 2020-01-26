@@ -1,3 +1,6 @@
+#ifndef __LED_H__
+#define __LED_H__
+
 class Led {
 private:
   int pin;
@@ -43,3 +46,5 @@ public:
     }
   }
 };
+
+#endif // __LED_H__

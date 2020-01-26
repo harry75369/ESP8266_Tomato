@@ -1,3 +1,6 @@
+#ifndef __MUSIC_H__
+#define __MUSIC_H__
+
 #include <initializer_list>
 #include <vector>
 
@@ -246,3 +249,5 @@ static Music taiyangzhaochangshengqi(
     4,
     5,
   });
+
+#endif // __MUSIC_H__

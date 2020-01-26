@@ -1,3 +1,6 @@
+#ifndef __BUTTON_H__
+#define __BUTTON_H__
+
 class Button {
 private:
   int pin;
@@ -33,3 +36,5 @@ public:
     return pressed;
   }
 };
+
+#endif // __BUTTON_H__
