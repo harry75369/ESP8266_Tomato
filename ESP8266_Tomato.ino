@@ -2,15 +2,16 @@
 #include "Button.h"
 #include "Led.h"
 #include "Clock.h"
+#include "WebServer.h"
 #include <Ticker.h>
 #include <ESP8266WiFi.h>
-#include <TZ.h>                         // TZ_Asia_Shanghai
-#include <time.h>                       // time() ctime()
+#include <TZ.h>
+#include <time.h>
 
 /// TODO
 /// 1. connect to wifi and sync datetime [done]
-/// 2. keep record of tomato clock logs
-/// 3. setup web server to show logs
+/// 2. keep record of tomato clock logs [done]
+/// 3. setup web server to show logs [done]
 
 #define WIFI_SSID "WIFI_SSID"
 #define WIFI_PASS "WIFI_PASS"
@@ -42,15 +43,13 @@ Button blueButton(blueButtonPin);
 Led redLed(redLedPin);
 Led greenLed(greenLedPin);
 BlinkLed blueLed(blueLedPin);
-ClockConfig cfg = {
-  .workMinutes = 25,
-  .restMinutes = 5,
-};
 TomatoClock tomatoClock;
 Ticker ledTicker;
 Ticker musicTicker;
 Ticker clockTicker;
 Ticker wifiTicker;
+bool fsReady = false;
+WebServer server;
 
 void tellCycles(int counter) {
   static int lastCounter = 0;
@@ -108,7 +107,7 @@ void setup() {
   });
   clockTicker.attach(0.02, [&]() {
     if (tomatoClock.isWorking()) {
-      if ((millis() - tomatoClock.timeStamp) > 1000 * 60 * cfg.workMinutes) {
+      if ((millis() - tomatoClock.getTimeStamp()) > 1000 * 60 * tomatoClock.getWorkMinutes()) {
         greenLed.turnOff();
         redLed.turnOn();
         stopAllMusic();
@@ -116,7 +115,7 @@ void setup() {
         tomatoClock.startResting();
       }
     } else if (tomatoClock.isResting()) {
-      if ((millis() - tomatoClock.timeStamp) > 1000 * 60 * cfg.restMinutes) {
+      if ((millis() - tomatoClock.getTimeStamp()) > 1000 * 60 * tomatoClock.getRestMinutes()) {
         greenLed.turnOff();
         redLed.turnOff();
         stopAllMusic();
@@ -136,11 +135,13 @@ void setup() {
   
   // debug console
   Serial.begin(115200);
-  Serial.println("\nWelcome to ESP8266 Tomato Project!");
+  Serial.println("\nWelcome to ESP8266 Tomato Clock!");
 
   // init wifi and time
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASS);
+  Serial.print("Connecting to Wifi: ");
+  Serial.println(WIFI_SSID);
   wifiTicker.attach(0.02, [&]() {
     if (WiFi.status() == WL_CONNECTED) {
       Serial.print("Wifi connected: ");
@@ -149,14 +150,39 @@ void setup() {
       configTime(TZ_Asia_Shanghai, "cn.ntp.org.cn");
     }
   });
+
+  // init file system
+  fsReady = SPIFFS.begin();
+
+  // start web server
+  server.start();
 }
 
 void loop() {
+  // wait until filesystem and logger is ready
+  if (!fsReady || !tomatoClock.isLoggerReady()) {
+    if (fsReady) {
+      tomatoClock.initLogger();
+    }
+    blueLed.blink(0.1);
+    return;
+  }
+
   // wait until wifi is ready
   if (WiFi.status() != WL_CONNECTED) {
     blueLed.blink(0.1);
     return;
   }
+
+  // wait until time is synced
+  time_t now = time(nullptr);
+  if (now < 1e9) {
+    blueLed.blink(0.1);
+    return;
+  }
+
+  // handle web server requests
+  server.handleClient();
 
   // start working
   if (blueButton.isPressed()) {
