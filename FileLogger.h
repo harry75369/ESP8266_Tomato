@@ -3,6 +3,7 @@
 
 #include "JsonFile.h"
 #include <time.h>
+#include <ESP8266WiFi.h>
 
 class FileLogger : public JsonFile {
 public:
@@ -14,6 +15,8 @@ public:
     cJSON_AddStringToObject(record, "time", ctime(&now));
     cJSON_AddNumberToObject(record, "time_t", now);
     cJSON_AddStringToObject(record, "action", "systemStart");
+    cJSON_AddStringToObject(record, "ssid", WiFi.SSID().c_str());
+    cJSON_AddStringToObject(record, "ip", WiFi.localIP().toString().c_str());
     cJSON_AddItemToArray(root.get(), record);
     write();
   }
