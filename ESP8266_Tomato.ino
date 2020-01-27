@@ -146,40 +146,7 @@ void setup() {
 }
 
 bool isReady() {
-  static OneShot readyCb1([&]() {
-    Serial.println("[INFO] File logger is ready.");
-    redLed.turnOff();
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(WIFI_SSID, WIFI_PASS);
-    Serial.print("[INFO] Connecting to Wifi: ");
-    Serial.println(WIFI_SSID);
-  });
-  static OneShot readyCb2([&]() {
-    Serial.print("[INFO] Wifi connected: ");
-    Serial.println(WiFi.localIP());
-    blueLed.turnOn();
-    Serial.println("[INFO] Synchronizing time...");
-    delay(100); // wait network to stablize
-    configTime(TZ_Asia_Shanghai, "cn.ntp.org.cn");
-
-    if (!MDNS.begin(TOMATO_HOST)) {
-      Serial.println("[ERROR] Failed to start mDNS.");
-    } else {
-      mdnsTicker.attach(0.5, [&]() {
-        MDNS.update();
-      });
-    }
-  });
-  static OneShot readyCb3([&]() {
-    Serial.print("[INFO] Time is synchronized: ");
-    time_t now = time(nullptr);
-    Serial.print(ctime(&now));
-    greenLed.turnOff();
-    logger.onSystemStart();
-    Serial.print("[INFO] System finished startup. Access it at: http://");
-    Serial.print(TOMATO_HOST);
-    Serial.println(".local/");
-  });
+  static String addr = TOMATO_HOST ".local";
 
   // wait until filesystem and logger is ready
   if (!fsReady || !logger.isReady()) {
@@ -189,7 +156,15 @@ bool isReady() {
     redLed.blink(0.1);
     return false;
   } else {
-    readyCb1.trigger();
+    static OneShot oneShot1;
+    oneShot1.trigger([&]() {
+      Serial.println("[INFO] File logger is ready.");
+      redLed.turnOff();
+      WiFi.mode(WIFI_STA);
+      WiFi.begin(WIFI_SSID, WIFI_PASS);
+      Serial.print("[INFO] Connecting to Wifi: ");
+      Serial.println(WIFI_SSID);
+    });
   }
 
   // wait until wifi is ready
@@ -197,7 +172,24 @@ bool isReady() {
     blueLed.blink(0.1);
     return false;
   } else {
-    readyCb2.trigger();
+    static OneShot oneShot2;
+    oneShot2.trigger([&]() {
+      Serial.print("[INFO] Wifi connected: ");
+      Serial.println(WiFi.localIP());
+      blueLed.turnOn();
+      Serial.println("[INFO] Synchronizing time...");
+      delay(100); // wait network to stablize
+      configTime(TZ_Asia_Shanghai, "cn.ntp.org.cn");
+
+      if (!MDNS.begin(TOMATO_HOST)) {
+        Serial.println("[ERROR] Failed to start mDNS.");
+        addr = WiFi.localIP().toString();
+      } else {
+        mdnsTicker.attach(0.5, [&]() {
+          MDNS.update();
+        });
+      }
+    });
   }
 
   // wait until time is synced
@@ -206,7 +198,16 @@ bool isReady() {
     greenLed.blink(0.1);
     return false;
   } else {
-    readyCb3.trigger();
+    static OneShot oneShot3;
+    oneShot3.trigger([&]() {
+      Serial.print("[INFO] Time is synchronized: ");
+      time_t now = time(nullptr);
+      Serial.print(ctime(&now));
+      greenLed.turnOff();
+      logger.onSystemStart();
+      Serial.print("[INFO] System finished startup. Access it at: http://");
+      Serial.println(addr);
+    });
   }
   return true;
 }
