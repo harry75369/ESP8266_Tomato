@@ -46,6 +46,7 @@ BlinkLed blueLed(blueLedPin);
 Ticker ledTicker;
 Ticker musicTicker;
 Ticker clockTicker;
+Ticker mdnsTicker;
 bool fsReady = false;
 FileLogger logger("/logs.json");
 TomatoClock tomatoClock(&logger);
@@ -163,6 +164,10 @@ bool isReady() {
 
     if (!MDNS.begin(TOMATO_HOST)) {
       Serial.println("[ERROR] Failed to start mDNS.");
+    } else {
+      mdnsTicker.attach(0.5, [&]() {
+        MDNS.update();
+      });
     }
   });
   static OneShot readyCb3([&]() {
@@ -171,7 +176,9 @@ bool isReady() {
     Serial.print(ctime(&now));
     greenLed.turnOff();
     logger.onSystemStart();
-    Serial.println("[INFO] System finished startup.");
+    Serial.print("[INFO] System finished startup. Access it at: http://");
+    Serial.print(TOMATO_HOST);
+    Serial.println(".local/");
   });
 
   // wait until filesystem and logger is ready
