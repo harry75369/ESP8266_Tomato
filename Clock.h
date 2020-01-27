@@ -4,7 +4,7 @@
 #include "FileLogger.h"
 
 #define WORK_MINUTES 25
-#define REST_MINUTES 1
+#define REST_MINUTES 5
 
 class TomatoClock {
   struct ClockConfig {
