@@ -7,11 +7,14 @@
 #include "WebServer.h"
 #include <Ticker.h>
 #include <ESP8266WiFi.h>
+#include <ESP8266mDNS.h>
 #include <TZ.h>
 #include <time.h>
 
 #define WIFI_SSID "WIFI_SSID"
 #define WIFI_PASS "WIFI_PASS"
+
+#define TOMATO_HOST "tomato"
 
 // pin mappings for WeMos D1 mini
 const int d0 = D2;
@@ -156,6 +159,10 @@ bool isReady() {
     blueLed.turnOn();
     Serial.println("[INFO] Synchronizing time...");
     configTime(TZ_Asia_Shanghai, "cn.ntp.org.cn");
+
+    if (!MDNS.begin(TOMATO_HOST)) {
+      Serial.println("[ERROR] Failed to start mDNS.");
+    }
   });
   static OneShot readyCb3([&]() {
     Serial.print("[INFO] Time is synchronized: ");
