@@ -1,17 +1,12 @@
-#include "Music.h"
 #include "Button.h"
-#include "Led.h"
 #include "Clock.h"
+#include "Led.h"
+#include "Music.h"
 #include "WebServer.h"
 #include <Ticker.h>
 #include <ESP8266WiFi.h>
 #include <TZ.h>
 #include <time.h>
-
-/// TODO
-/// 1. connect to wifi and sync datetime [done]
-/// 2. keep record of tomato clock logs [done]
-/// 3. setup web server to show logs [done]
 
 #define WIFI_SSID "WIFI_SSID"
 #define WIFI_PASS "WIFI_PASS"
@@ -132,10 +127,6 @@ void setup() {
       }
     }
   });
-  
-  // debug console
-  Serial.begin(115200);
-  Serial.println("\nWelcome to ESP8266 Tomato Clock!");
 
   // init wifi and time
   WiFi.mode(WIFI_STA);
@@ -156,6 +147,10 @@ void setup() {
 
   // start web server
   server.start();
+
+  // debug console
+  Serial.begin(115200);
+  Serial.println("\nWelcome to ESP8266 Tomato Clock!");
 }
 
 void loop() {
