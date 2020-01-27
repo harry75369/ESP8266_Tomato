@@ -1,15 +1,25 @@
 #ifndef __WEB_SERVER_H__
 #define __WEB_SERVER_H__
 
+#include "FileLogger.h"
 #include <ESP8266WebServer.h>
 
 class WebServer {
   ESP8266WebServer server;
+  FileLogger* logger;
 
 public:
-  WebServer()
+  WebServer(FileLogger* p)
     : server(80)
+    , logger(p)
   {
+    server.on("/clearLogs", HTTP_PUT, [&]() {
+      if (logger) {
+        logger->reset();
+      }
+      server.send(200, "text/plain", "ok");
+      printRequestLog(200);
+    });
     server.onNotFound([&]() {
       bool ret = onRequest(server.uri());
       if (!ret) {

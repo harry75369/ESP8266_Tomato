@@ -49,7 +49,7 @@ Ticker clockTicker;
 bool fsReady = false;
 FileLogger logger("/logs.json");
 TomatoClock tomatoClock(&logger);
-WebServer server;
+WebServer server(&logger);
 
 void tellCycles(int counter) {
   static int lastCounter = 0;
@@ -158,6 +158,7 @@ bool isReady() {
     Serial.println(WiFi.localIP());
     blueLed.turnOn();
     Serial.println("[INFO] Synchronizing time...");
+    delay(100); // wait network to stablize
     configTime(TZ_Asia_Shanghai, "cn.ntp.org.cn");
 
     if (!MDNS.begin(TOMATO_HOST)) {
@@ -170,6 +171,7 @@ bool isReady() {
     Serial.print(ctime(&now));
     greenLed.turnOff();
     logger.onSystemStart();
+    Serial.println("[INFO] System finished startup.");
   });
 
   // wait until filesystem and logger is ready
