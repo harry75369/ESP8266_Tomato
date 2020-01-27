@@ -5,11 +5,29 @@
 #include <FS.h>
 #include <memory>
 
+#define MAX_FILE_SIZE (1024 * 1024)
+
+struct CJsonDeleter {
+  void operator()(cJSON* json) {
+    if (json) {
+      cJSON_Delete(json);
+    }
+  }
+};
+
+struct StrDeleter {
+  void operator()(char* str) {
+    if (str) {
+      free(str);
+    }
+  }
+};
+
 class JsonFile {
 protected:
   bool ready;
   std::string fileName;
-  std::unique_ptr<cJSON> root;
+  std::unique_ptr<cJSON, CJsonDeleter> root;
 
 public:
   JsonFile(const std::string& fn)
@@ -26,17 +44,34 @@ public:
       return;
     }
     if (SPIFFS.exists(fileName.c_str())) {
-      Serial.print("Init JsonFile from: ");
+      Serial.print("[INFO] Initializing json from file: ");
       Serial.println(fileName.c_str());
       File f = SPIFFS.open(fileName.c_str(), "r");
-      root.reset(cJSON_Parse(f.readString().c_str()));
+      if (f.size() > 0 && f.size() < MAX_FILE_SIZE) {
+        String content = f.readString();
+        cJSON* p = cJSON_Parse(content.c_str());
+        if (p) {
+          root.reset(p);
+          ready = true;
+        } else {
+          Serial.println("[ERROR] Failed to parse this file as json.");
+        }
+      } else {
+        Serial.println("[WARN] Empty file or exceeds max file size.");
+      }
       f.close();
-    } else {
-      Serial.print("New JsonFile: ");
-      Serial.println(fileName.c_str());
-      root.reset(cJSON_CreateArray());
     }
-    ready = true;
+    if (!ready) {
+      Serial.print("[INFO] Create new json file: ");
+      Serial.println(fileName.c_str());
+      ready = true;
+      reset();
+    }
+  }
+
+  void reset() {
+    root.reset(cJSON_CreateArray());
+    write();
   }
 
   void write() {
@@ -44,7 +79,7 @@ public:
       return;
     }
     File f = SPIFFS.open(fileName.c_str(), "w");
-    std::unique_ptr<char> str(cJSON_PrintUnformatted(root.get()));
+    std::unique_ptr<char, StrDeleter> str(cJSON_PrintUnformatted(root.get()));
     f.print(str.get());
     f.close();
   }

@@ -1,7 +1,9 @@
 #include "Button.h"
 #include "Clock.h"
+#include "FileLogger.h"
 #include "Led.h"
 #include "Music.h"
+#include "OneShot.h"
 #include "WebServer.h"
 #include <Ticker.h>
 #include <ESP8266WiFi.h>
@@ -35,15 +37,15 @@ const int blueLedPin = LED_BUILTIN;
 // global variables
 Button redButton(redButtonPin);
 Button blueButton(blueButtonPin);
-Led redLed(redLedPin);
-Led greenLed(greenLedPin);
+BlinkLed redLed(redLedPin);
+BlinkLed greenLed(greenLedPin);
 BlinkLed blueLed(blueLedPin);
-TomatoClock tomatoClock;
 Ticker ledTicker;
 Ticker musicTicker;
 Ticker clockTicker;
-Ticker wifiTicker;
 bool fsReady = false;
+FileLogger logger("/logs.json");
+TomatoClock tomatoClock(&logger);
 WebServer server;
 
 void tellCycles(int counter) {
@@ -128,51 +130,74 @@ void setup() {
     }
   });
 
-  // init wifi and time
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(WIFI_SSID, WIFI_PASS);
-  Serial.print("Connecting to Wifi: ");
-  Serial.println(WIFI_SSID);
-  wifiTicker.attach(0.02, [&]() {
-    if (WiFi.status() == WL_CONNECTED) {
-      Serial.print("Wifi connected: ");
-      Serial.println(WiFi.localIP());
-      wifiTicker.detach();
-      configTime(TZ_Asia_Shanghai, "cn.ntp.org.cn");
-    }
-  });
+  // start serial console
+  Serial.begin(115200);
+  Serial.println("\n--- Welcome to ESP8266 Tomato Clock! ---");
 
   // init file system
   fsReady = SPIFFS.begin();
 
   // start web server
   server.start();
-
-  // debug console
-  Serial.begin(115200);
-  Serial.println("\nWelcome to ESP8266 Tomato Clock!");
 }
 
-void loop() {
+bool isReady() {
+  static OneShot readyCb1([&]() {
+    Serial.println("[INFO] File logger is ready.");
+    redLed.turnOff();
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(WIFI_SSID, WIFI_PASS);
+    Serial.print("[INFO] Connecting to Wifi: ");
+    Serial.println(WIFI_SSID);
+  });
+  static OneShot readyCb2([&]() {
+    Serial.print("[INFO] Wifi connected: ");
+    Serial.println(WiFi.localIP());
+    blueLed.turnOn();
+    Serial.println("[INFO] Synchronizing time...");
+    configTime(TZ_Asia_Shanghai, "cn.ntp.org.cn");
+  });
+  static OneShot readyCb3([&]() {
+    Serial.print("[INFO] Time is synchronized: ");
+    time_t now = time(nullptr);
+    Serial.print(ctime(&now));
+    greenLed.turnOff();
+    logger.onSystemStart();
+  });
+
   // wait until filesystem and logger is ready
-  if (!fsReady || !tomatoClock.isLoggerReady()) {
+  if (!fsReady || !logger.isReady()) {
     if (fsReady) {
-      tomatoClock.initLogger();
+      logger.init();
     }
-    blueLed.blink(0.1);
-    return;
+    redLed.blink(0.1);
+    return false;
+  } else {
+    readyCb1.trigger();
   }
 
   // wait until wifi is ready
   if (WiFi.status() != WL_CONNECTED) {
     blueLed.blink(0.1);
-    return;
+    return false;
+  } else {
+    readyCb2.trigger();
   }
 
   // wait until time is synced
   time_t now = time(nullptr);
   if (now < 1e9) {
-    blueLed.blink(0.1);
+    greenLed.blink(0.1);
+    return false;
+  } else {
+    readyCb3.trigger();
+  }
+  return true;
+}
+
+void loop() {
+  // wait system to be ready
+  if (!isReady()) {
     return;
   }
 
