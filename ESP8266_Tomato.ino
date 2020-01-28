@@ -1,6 +1,7 @@
 #include "Button.h"
 #include "Clock.h"
 #include "FileLogger.h"
+#include "FileSystem.h"
 #include "Led.h"
 #include "Music.h"
 #include "OneShot.h"
@@ -139,7 +140,7 @@ void setup() {
   Serial.println("\n--- Welcome to ESP8266 Tomato Clock! ---");
 
   // init file system
-  fsReady = SPIFFS.begin();
+  fsReady = FileSystem.begin();
 
   // start web server
   server.start();

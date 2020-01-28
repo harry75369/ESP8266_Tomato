@@ -2,6 +2,7 @@
 #define __WEB_SERVER_H__
 
 #include "FileLogger.h"
+#include "FileSystem.h"
 #include <ESP8266WebServer.h>
 
 class WebServer {
@@ -94,10 +95,10 @@ protected:
       path += "index.html";
     }
     String pathWithGz = path + ".gz";
-    if (SPIFFS.exists(path) || SPIFFS.exists(pathWithGz)) {
-      File file = SPIFFS.exists(pathWithGz)
-        ? SPIFFS.open(pathWithGz, "r")
-        : SPIFFS.open(path, "r");
+    if (FileSystem.exists(path) || FileSystem.exists(pathWithGz)) {
+      File file = FileSystem.exists(pathWithGz)
+        ? FileSystem.open(pathWithGz, "r")
+        : FileSystem.open(path, "r");
       String contentType = getContentType(path);
       server.streamFile(file, contentType);
       file.close();

@@ -1,8 +1,8 @@
 #ifndef __JSON_FILE_H__
 #define __JSON_FILE_H__
 
+#include "FileSystem.h"
 #include "cJSON.h"
-#include <FS.h>
 #include <memory>
 
 #define MAX_FILE_SIZE (1024 * 1024)
@@ -43,10 +43,10 @@ public:
     if (ready) {
       return;
     }
-    if (SPIFFS.exists(fileName.c_str())) {
+    if (FileSystem.exists(fileName.c_str())) {
       Serial.print("[INFO] Initializing json from file: ");
       Serial.println(fileName.c_str());
-      File f = SPIFFS.open(fileName.c_str(), "r");
+      File f = FileSystem.open(fileName.c_str(), "r");
       if (f.size() > 0 && f.size() < MAX_FILE_SIZE) {
         String content = f.readString();
         cJSON* p = cJSON_Parse(content.c_str());
@@ -78,7 +78,7 @@ public:
     if (!ready) {
       return;
     }
-    File f = SPIFFS.open(fileName.c_str(), "w");
+    File f = FileSystem.open(fileName.c_str(), "w");
     std::unique_ptr<char, StrDeleter> str(cJSON_PrintUnformatted(root.get()));
     f.print(str.get());
     f.close();
