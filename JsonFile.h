@@ -23,11 +23,14 @@ struct StrDeleter {
   }
 };
 
+typedef std::unique_ptr<cJSON, CJsonDeleter> cJSON_ptr;
+typedef std::unique_ptr<char, StrDeleter> str_ptr;
+
 class JsonFile {
 protected:
   bool ready;
   std::string fileName;
-  std::unique_ptr<cJSON, CJsonDeleter> root;
+  cJSON_ptr root;
 
 public:
   JsonFile(const std::string& fn)
@@ -79,7 +82,7 @@ public:
       return;
     }
     File f = FileSystem.open(fileName.c_str(), "w");
-    std::unique_ptr<char, StrDeleter> str(cJSON_PrintUnformatted(root.get()));
+    str_ptr str(cJSON_PrintUnformatted(root.get()));
     f.print(str.get());
     f.close();
   }

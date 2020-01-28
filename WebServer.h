@@ -1,17 +1,27 @@
 #ifndef __WEB_SERVER_H__
 #define __WEB_SERVER_H__
 
+#include "Clock.h"
 #include "FileLogger.h"
 #include "FileSystem.h"
 #include <ESP8266WebServer.h>
 
+cJSON* getTimeNow() {
+  time_t now = time(nullptr);
+  cJSON* root = cJSON_CreateObject();
+  cJSON_AddNumberToObject(root, "now", now);
+  return root;
+}
+
 class WebServer {
   ESP8266WebServer server;
+  TomatoClock* tomatoClock;
   FileLogger* logger;
 
 public:
-  WebServer(FileLogger* p)
+  WebServer(TomatoClock* c, FileLogger* p)
     : server(80)
+    , tomatoClock(c)
     , logger(p)
   {
     server.on("/clearLogs", HTTP_PUT, [&]() {
@@ -20,6 +30,17 @@ public:
       }
       server.send(200, "text/plain", "ok");
       printRequestLog(200);
+    });
+    server.on("/getTimeNow", HTTP_GET, [&]() {
+      cJSON_ptr root(getTimeNow());
+      server.send(200, "application/json", cJSON_PrintUnformatted(root.get()));
+    });
+    server.on("/getStatus", HTTP_GET, [&]() {
+      if (tomatoClock) {
+        server.send(200, "text/plain", tomatoClock->getStatusStr());
+      } else {
+        server.send(500, "text/plain", "Invalid tomato clock pointer.");
+      }
     });
     server.onNotFound([&]() {
       bool ret = onRequest(server.uri());

@@ -1,9 +1,200 @@
-<h1>ESP8266 Tomato Clock</h1>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset='utf-8'>
+  <title>ESP8266 Tomato Clock</title>
+<style>
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+}
+.container {
+  width: 1000px;
+  min-height: 400px;
+  margin: 0 auto;
+}
+.header {
+  display: flex;
+  justify-content: space-around;
+  background: tomato;
+  min-height: 200px;
+}
+#main, #logs {
+  background: linen;
+  min-height: 300px;
+}
+.card {
+  width: 240px;
+  border-radius: 5px;
+  box-shadow: 1px 1px 1px 1px chocolate;
+  margin: 30px 5px;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.card-title {
+  font-size: 18pt;
+  margin: 12px 0;
+}
+.card-content {
+  font-size: 22pt;
+  font-family: monospace;
+  margin-top: 5px;
+}
+.full-button {
+  width: 240px;
+  height: 30px;
+  cursor: pointer;
+  text-align: center;
+  color: dimgray;
+}
+.card-footer {
+  font-size: 10pt;
+  margin-top: 20px;
+}
+.working-status {
+  color: lightgreen;
+}
+.resting-status {
+  color: orangered;
+}
+.stopped-status {
+  color: royalblue;
+}
+.unknown-status {
+  color: gray;
+}
+.hidden {
+  display: none;
+}
+</style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="card">
+        <div class="card-title">Time</div>
+        <div class="card-content"><span id="current-time">Syncing...<span></div>
+        <div class="card-footer"><span id="current-date"><span></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Status</div>
+        <div class="card-content"><span id="current-status" class="unknown-status">Unknown<span></div>
+        <div class="card-footer"><div class="full-button" id="main-button">▼</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Finished</div>
+        <div class="card-content"><span id="finished-tomatoes">-<span></div>
+        <div class="card-footer"><div class="full-button" id="logs-button">▼</div></div>
+      </div>
+    </div>
+    <div id="main">
+    </div>
+    <div id="logs" class="hidden">
+    </div>
+  </div>
+  <script>
+const current_time = document.getElementById('current-time');
+const current_date = document.getElementById('current-date');
+const current_status = document.getElementById('current-status');
+const finished_tomatoes = document.getElementById('finished-tomatoes');
+const main_area = document.getElementById('main');
+const main_button = document.getElementById('main-button');
+const logs_area = document.getElementById('logs');
+const logs_button = document.getElementById('logs-button');
 
-<hr>
+let system_time = Date.now();
+let system_logs = {};
 
-<ul>
-  <li>
-    <a href="/logs.json">Clock logs</a>
-  </li>
-</url>
+const display_system_time = () => {
+  const display_time = (t) => {
+    const h = `${t.getHours()}`.padStart(2, '0');
+    const m = `${t.getMinutes()}`.padStart(2, '0');
+    const s = `${t.getSeconds()}`.padStart(2, '0');
+    current_time.innerText = `${h}:${m}:${s}`;
+  };
+  const display_date = (t) => {
+    const y = `${t.getFullYear()}`;
+    const m = `${t.getMonth() + 1}`.padStart(2, '0');
+    const d = `${t.getDate()}`.padStart(2, '0');
+    const wd = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][t.getDay()];
+    current_date.innerText = `${y}-${m}-${d} ${wd}`;
+  };
+  const t = new Date(system_time);
+  display_time(t);
+  display_date(t);
+};
+
+const display_statistics = () => {
+  const stops = system_logs.filter((rec) => rec.action == "clockStop");
+  finished_tomatoes.innerText = stops.length || '0';
+};
+
+const fetch_system_time = async () => {
+  const res = await fetch('/getTimeNow');
+  if (!res.ok) {
+    return;
+  }
+  const data = await res.json();
+  system_time = (data.now || 0) * 1000;
+  if (system_time == 0) {
+    system_time = Date.now();
+  }
+  display_system_time();
+};
+
+const fetch_tomato_status = async () => {
+  const res = await fetch('/getStatus');
+  let state = 'Unknown';
+  if (res.ok) {
+    state = await res.text() || 'Unknown';
+  }
+  current_status.innerText = state;
+  if (state == 'Working') {
+    current_status.className = 'working-status';
+  } else if (state == 'Resting') {
+    current_status.className = 'resting-status';
+  } else if (state == 'Stopped') {
+    current_status.className = 'stopped-status';
+  } else {
+    current_status.className = 'unknown-status';
+  }
+};
+
+const fetch_system_logs = async () => {
+  const res = await fetch('/logs.json');
+  if (!res.ok) {
+    return;
+  }
+  system_logs = await res.json();
+  display_statistics();
+};
+
+window.onload = () => {
+  // init
+  fetch_system_time();
+  fetch_tomato_status();
+  fetch_system_logs();
+
+  main_button.addEventListener('click', () => {
+    main_area.className = '';
+    logs_area.className = 'hidden';
+  });
+  logs_button.addEventListener('click', () => {
+    main_area.className = 'hidden';
+    logs_area.className = '';
+  });
+
+  // timer
+  setInterval(() => {
+    system_time += 1000;
+    display_system_time();
+    fetch_tomato_status();
+  }, 1000);
+  setInterval(() => {
+    fetch_system_logs();
+  }, 10000);
+};
+  </script>
+</body>
+</html>

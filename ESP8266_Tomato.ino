@@ -51,7 +51,7 @@ Ticker mdnsTicker;
 bool fsReady = false;
 FileLogger logger("/logs.json");
 TomatoClock tomatoClock(&logger);
-WebServer server(&logger);
+WebServer server(&tomatoClock, &logger);
 
 void tellCycles(int counter) {
   static int lastCounter = 0;

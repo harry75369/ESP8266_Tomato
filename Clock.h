@@ -75,6 +75,13 @@ public:
     return (state == CLK_STOPPED);
   }
 
+  inline const char* getStatusStr() {
+    if (isWorking()) return "Working";
+    if (isResting()) return "Resting";
+    if (isStopped()) return "Stopped";
+    return "Unknown";
+  }
+
   inline float getWorkMinutes() {
     return cfg.workMinutes;
   }
