@@ -9,54 +9,59 @@ body {
 }
 .container {
   width: 1000px;
-  min-height: 400px;
   margin: 0 auto;
+  text-align: center;
 }
 .header {
   display: flex;
   justify-content: space-around;
   background: tomato;
-  min-height: 200px;
-}
-#main, #logs {
-  background: linen;
-  min-height: 300px;
+  border-radius: 20px 20px 0 0;
 }
 .card {
   width: 240px;
   border-radius: 5px;
-  box-shadow: 1px 1px 1px 1px chocolate;
-  margin: 30px 5px;
+  margin: 30px 0;
   background: white;
   display: flex;
   flex-direction: column;
-  align-items: center;
 }
 .card-title {
   font-size: 18pt;
-  margin: 12px 0;
+  margin: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid gray;
 }
 .card-content {
   font-size: 22pt;
   font-family: monospace;
   margin-top: 5px;
 }
-.full-button {
+.card-footer {
+  font-size: 10pt;
+  margin-top: 20px;
+}
+.card-button {
   width: 240px;
   height: 30px;
   cursor: pointer;
   text-align: center;
-  color: dimgray;
+  border-radius: 0 0 5px 5px;
 }
-.card-footer {
-  font-size: 10pt;
-  margin-top: 20px;
+.center-text {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+.card-button:hover {
+  background: whitesmoke;
 }
 .working-status {
   color: lightgreen;
 }
 .resting-status {
-  color: orangered;
+  color: coral;
 }
 .stopped-status {
   color: royalblue;
@@ -67,10 +72,68 @@ body {
 .hidden {
   display: none;
 }
+#main {
+  position: relative;
+  background: linen;
+  min-height: 300px;
+  border-radius: 0 0 20px 20px;
+}
+#main-label {
+  position: absolute;
+  left: 95px;
+  top: 30px;
+  font-size: 20px;
+}
+#chart {
+  position: absolute;
+  left: 95px;
+  top: 80px;
+  width: 810px;
+  height: 150px;
+  background: white;
+  border-radius: 20px 20px 0 0;
+}
+#division {
+  position: relative;
+  height: 120px;
+  border-radius: 20px 20px 0 0;
+}
+#division span {
+  margin-top: 5px;
+}
+#working-part {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 20px 0 0 0;
+  background-color: lightgreen;
+  height: 120px;
+  width: 675px;
+}
+#resting-part {
+  position: absolute;
+  top: 0;
+  left: 675px;
+  border-radius: 0 20px 0 0;
+  background-color: coral;
+  height: 120px;
+  width: 135px;
+}
+#progress {
+  background-color: royalblue;
+  height: 30px;
+  width: 405px;
+}
+#logs {
+  background: honeydew;
+  min-height: 300px;
+  border-radius: 0 0 20px 20px;
+}
 </style>
 </head>
 <body>
   <div class="container">
+    <h1>ESP8266 Tomato Clock</h1>
     <div class="header">
       <div class="card">
         <div class="card-title">Time</div>
@@ -80,15 +143,29 @@ body {
       <div class="card">
         <div class="card-title">Status</div>
         <div class="card-content"><span id="current-status" class="unknown-status">Unknown<span></div>
-        <div class="card-footer"><div class="full-button" id="main-button">▼</div></div>
+        <div class="card-footer"><div class="card-button center-text" id="main-button">▼</div></div>
       </div>
       <div class="card">
         <div class="card-title">Finished</div>
         <div class="card-content"><span id="finished-tomatoes">-<span></div>
-        <div class="card-footer"><div class="full-button" id="logs-button">▼</div></div>
+        <div class="card-footer"><div class="card-button center-text" id="logs-button">▼</div></div>
       </div>
     </div>
     <div id="main">
+      <div id="chart">
+        <div id="division">
+          <div class="center-text" id="working-part">
+            <span>Working time</span>
+            <span id="working-time">-</span>
+          </div>
+          <div class="center-text" id="resting-part">
+            <span>Resting time</span>
+            <span id="resting-time">-</span>
+          </div>
+        </div>
+        <div id="progress"></div>
+      </div>
+      <div id="main-label">Remaining cycles: -</div>
     </div>
     <div id="logs" class="hidden">
     </div>
@@ -126,20 +203,26 @@ const display_system_time = () => {
 };
 
 const display_statistics = () => {
+  const rests = system_logs.filter((rec) => rec.action == "clockStartResting");
   const stops = system_logs.filter((rec) => rec.action == "clockStop");
-  finished_tomatoes.innerText = stops.length || '0';
+  finished_tomatoes.innerText = Math.max(rests.length, stops.length);
+};
+
+const display_logs_by_date = () => {
 };
 
 const fetch_system_time = async () => {
   const res = await fetch('/getTimeNow');
   if (!res.ok) {
+    system_time = Date.now();
+    display_system_time();
     return;
   }
   const data = await res.json();
-  system_time = (data.now || 0) * 1000;
-  if (system_time == 0) {
+  if (!data.now) {
     system_time = Date.now();
   }
+  system_time = data.now * 1000;
   display_system_time();
 };
 
@@ -168,14 +251,11 @@ const fetch_system_logs = async () => {
   }
   system_logs = await res.json();
   display_statistics();
+  display_logs_by_date();
 };
 
 window.onload = () => {
-  // init
-  fetch_system_time();
-  fetch_tomato_status();
-  fetch_system_logs();
-
+  // switch tabs
   main_button.addEventListener('click', () => {
     main_area.className = '';
     logs_area.className = 'hidden';
@@ -184,16 +264,29 @@ window.onload = () => {
     main_area.className = 'hidden';
     logs_area.className = '';
   });
+};
+let short_poll;
+let long_poll;
+window.onfocus = () => {
+  // init
+  fetch_system_time();
+  fetch_tomato_status();
+  fetch_system_logs();
 
   // timer
-  setInterval(() => {
+  short_poll = setInterval(() => {
     system_time += 1000;
     display_system_time();
     fetch_tomato_status();
   }, 1000);
-  setInterval(() => {
+  long_poll = setInterval(() => {
+    fetch_system_time();
     fetch_system_logs();
   }, 10000);
+};
+window.onblur = () => {
+  clearInterval(short_poll);
+  clearInterval(long_poll);
 };
   </script>
 </body>
