@@ -15,8 +15,8 @@ WebUI:
 1. Arduino IDE
 2. [Arduino core for ESP8266](https://github.com/esp8266/Arduino)
 3. Arduino Plugins (which can be found in `tools` directory, see README [there](https://github.com/harry75369/ESP8266_Tomato/blob/master/tools/README.md))
-  a) `ESP8266FS`
-  b) `ESP8266LittleFS`
+    - `ESP8266FS`
+    - `ESP8266LittleFS`
 
 ## Build Instructions
 
@@ -75,3 +75,6 @@ The address is provided by the UDP packet of mDNS protocol, however, the mDNS im
 
 Please note the WebUI is for visualization purpose only. All controllers are on the boards for now.
 
+# License
+
+Chaoya Li. Copyright 2020. Under MIT license.
