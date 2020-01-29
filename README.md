@@ -20,6 +20,8 @@ WebUI:
 
 ## Build Instructions
 
+Note: Please fill in the WiFi SSID and password in the `ESP8266_Tomato.ino` file.
+
 1. Use Arduino IDE to open this project and compile/upload program to ESP8266.
 2. Use `ESP8266LittleFS` plugin to upload files under `data` directory to ESP8266.
 3. Done!
