@@ -58,10 +58,10 @@ body {
   background: whitesmoke;
 }
 .working-status {
-  color: lightgreen;
+  color: gold;
 }
 .resting-status {
-  color: coral;
+  color: navajowhite;
 }
 .stopped-status {
   color: royalblue;
@@ -106,7 +106,7 @@ body {
   top: 0;
   left: 0;
   border-radius: 20px 0 0 0;
-  background-color: lightgreen;
+  background-color: gold;
   height: 120px;
   width: 675px;
 }
@@ -115,25 +115,34 @@ body {
   top: 0;
   left: 675px;
   border-radius: 0 20px 0 0;
-  background-color: coral;
+  background-color: navajowhite;
   height: 120px;
   width: 135px;
 }
-#progress {
+#progress-bar {
   background-color: royalblue;
   height: 30px;
-  width: 405px;
+  width: 810px;
+  transition-property: width;
+  transition-duration: 0.3s;
+  transition-timing-function: ease;
+}
+.progress-none {
+  background-image: repeating-linear-gradient(135deg, transparent, transparent 25px, rgba(255,255,255,.5) 25px, rgba(255,255,255,.5) 50px) !important;
 }
 #logs {
   background: honeydew;
   min-height: 300px;
   border-radius: 0 0 20px 20px;
 }
+#system-tip {
+  color: red;
+}
 </style>
 </head>
 <body>
   <div class="container">
-    <h1>ESP8266 Tomato Clock</h1>
+    <h1>ESP8266 Tomato Clock <span id="system-tip">(Focus on me to start)</span></h1>
     <div class="header">
       <div class="card">
         <div class="card-title">Time</div>
@@ -143,34 +152,35 @@ body {
       <div class="card">
         <div class="card-title">Status</div>
         <div class="card-content"><span id="current-status" class="unknown-status">Unknown<span></div>
-        <div class="card-footer"><div class="card-button center-text" id="main-button">▼</div></div>
+        <div class="card-footer"><div class="card-button center-text" id="main-button" title="Details">▼</div></div>
       </div>
       <div class="card">
         <div class="card-title">Finished</div>
         <div class="card-content"><span id="finished-tomatoes">-<span></div>
-        <div class="card-footer"><div class="card-button center-text" id="logs-button">▼</div></div>
+        <div class="card-footer"><div class="card-button center-text" id="logs-button" title="Logs">▼</div></div>
       </div>
     </div>
     <div id="main">
       <div id="chart">
         <div id="division">
           <div class="center-text" id="working-part">
-            <span>Working time</span>
+            <span>Work</span>
             <span id="working-time">-</span>
           </div>
           <div class="center-text" id="resting-part">
-            <span>Resting time</span>
+            <span>Rest</span>
             <span id="resting-time">-</span>
           </div>
         </div>
-        <div id="progress"></div>
+        <div class="progress-none" id="progress-bar"></div>
       </div>
-      <div id="main-label">Remaining cycles: -</div>
+      <div id="main-label">Remaining cycles: <span id="remaining-cycles">-</span></div>
     </div>
     <div id="logs" class="hidden">
     </div>
   </div>
   <script>
+const system_tip = document.getElementById('system-tip');
 const current_time = document.getElementById('current-time');
 const current_date = document.getElementById('current-date');
 const current_status = document.getElementById('current-status');
@@ -179,8 +189,15 @@ const main_area = document.getElementById('main');
 const main_button = document.getElementById('main-button');
 const logs_area = document.getElementById('logs');
 const logs_button = document.getElementById('logs-button');
+const remaining_cycles = document.getElementById('remaining-cycles');
+const working_part = document.getElementById('working-part');
+const working_time = document.getElementById('working-time');
+const resting_part = document.getElementById('resting-part');
+const resting_time = document.getElementById('resting-time');
+const progress_bar = document.getElementById('progress-bar');
 
-let system_time = Date.now();
+const chart_full_width = 810;
+let system_time = 0;
 let system_logs = {};
 
 const display_system_time = () => {
@@ -202,6 +219,83 @@ const display_system_time = () => {
   display_date(t);
 };
 
+const reset_tomato_details = () => {
+  remaining_cycles.innerText = '-';
+  working_time.innerText = '-';
+  resting_time.innerText = '-';
+  progress_bar.className = 'progress-none';
+  progress_bar.style.width = `${chart_full_width}px`;
+};
+
+const display_tomato_details = (status) => {
+  remaining_cycles.innerText = status.cycles || 0;
+  const wt = status.workMinutes || 0;
+  const rt = status.restMinutes || 0;
+  const tt = wt + rt;
+  const t = status.timeStamp || 0;
+  const p = (wt > 1 && rt > 1) ? 0 : 2;
+
+  working_time.innerText = `${wt.toFixed(p)} mins`;
+  resting_time.innerText = `${rt.toFixed(p)} mins`;
+  if (wt > 0 && rt > 0) {
+    resting_part.style.left =
+    working_part.style.width = `${chart_full_width * wt / tt}px`;
+    resting_part.style.width = `${chart_full_width * rt / tt}px`;
+  } else {
+    progress_bar.className = 'progress-none';
+    progress_bar.style.width = `${chart_full_width}px`;
+    return;
+  }
+
+  if (status.status == 'Working') {
+    const dt = system_time - t * 1000;
+    let ratio = dt / (wt * 60 * 1000);
+    if (ratio > 1.0) {
+      ratio = 1.0;
+    }
+    progress_bar.className = '';
+    progress_bar.style.width = `${working_part.clientWidth * ratio}px`;
+  } else if (status.status == 'Resting') {
+    const dt = system_time - t * 1000;
+    let ratio = dt / (rt * 60 * 1000);
+    if (ratio > 1.0) {
+      ratio = 1.0;
+    }
+    progress_bar.className = '';
+    progress_bar.style.width = `${working_part.clientWidth + resting_part.clientWidth * ratio}px`;
+  } else if (status.status == 'Stopped') {
+    progress_bar.className = 'progress-none';
+    progress_bar.style.width = `${chart_full_width}px`;
+  }
+};
+
+let last_status = 'Unknown';
+
+const display_tomato_status = (status) => {
+  const state = status.status;
+  if (last_status != state) {
+    last_status = state;
+    fetch_system_logs();
+  }
+  current_status.innerText = state;
+  let unknown = false;
+  if (state == 'Working') {
+    current_status.className = 'working-status';
+  } else if (state == 'Resting') {
+    current_status.className = 'resting-status';
+  } else if (state == 'Stopped') {
+    current_status.className = 'stopped-status';
+  } else {
+    current_status.className = 'unknown-status';
+    unknown = true;
+  }
+  if (unknown) {
+    reset_tomato_details();
+  } else {
+    display_tomato_details(status);
+  }
+};
+
 const display_statistics = () => {
   const rests = system_logs.filter((rec) => rec.action == "clockStartResting");
   const stops = system_logs.filter((rec) => rec.action == "clockStop");
@@ -211,41 +305,30 @@ const display_statistics = () => {
 const display_logs_by_date = () => {
 };
 
+const host = '';
+
 const fetch_system_time = async () => {
-  const res = await fetch('/getTimeNow');
+  const res = await fetch(`${host}/getTimeNow`);
   if (!res.ok) {
-    system_time = Date.now();
     display_system_time();
     return;
   }
   const data = await res.json();
-  if (!data.now) {
-    system_time = Date.now();
-  }
-  system_time = data.now * 1000;
+  system_time = (data.now || 0) * 1000;
   display_system_time();
 };
 
 const fetch_tomato_status = async () => {
-  const res = await fetch('/getStatus');
-  let state = 'Unknown';
+  const res = await fetch(`${host}/getStatus`);
+  let status = { status: 'Unknown' };
   if (res.ok) {
-    state = await res.text() || 'Unknown';
+    status = await res.json();
   }
-  current_status.innerText = state;
-  if (state == 'Working') {
-    current_status.className = 'working-status';
-  } else if (state == 'Resting') {
-    current_status.className = 'resting-status';
-  } else if (state == 'Stopped') {
-    current_status.className = 'stopped-status';
-  } else {
-    current_status.className = 'unknown-status';
-  }
+  display_tomato_status(status);
 };
 
 const fetch_system_logs = async () => {
-  const res = await fetch('/logs.json');
+  const res = await fetch(`${host}/logs.json`);
   if (!res.ok) {
     return;
   }
@@ -268,23 +351,26 @@ window.onload = () => {
 let short_poll;
 let long_poll;
 window.onfocus = () => {
-  // init
+  system_tip.innerText = '';
+
+  // (re)init
   fetch_system_time();
   fetch_tomato_status();
   fetch_system_logs();
 
-  // timer
+  // setup timer
   short_poll = setInterval(() => {
-    system_time += 1000;
-    display_system_time();
+    fetch_system_time();
     fetch_tomato_status();
   }, 1000);
   long_poll = setInterval(() => {
-    fetch_system_time();
     fetch_system_logs();
-  }, 10000);
+  }, 60 * 1000);
 };
 window.onblur = () => {
+  system_tip.innerText = '(Focus on me to start)';
+
+  // clear timer
   clearInterval(short_poll);
   clearInterval(long_poll);
 };

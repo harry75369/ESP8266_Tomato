@@ -6,10 +6,25 @@
 #include "FileSystem.h"
 #include <ESP8266WebServer.h>
 
+#define WS_REMOTE_DEBUG
+
 cJSON* getTimeNow() {
   time_t now = time(nullptr);
   cJSON* root = cJSON_CreateObject();
   cJSON_AddNumberToObject(root, "now", now);
+  return root;
+}
+
+cJSON* getStatus(TomatoClock* clock) {
+  if (!clock) {
+    return nullptr;
+  }
+  cJSON* root = cJSON_CreateObject();
+  cJSON_AddStringToObject(root, "status", clock->getStatusStr());
+  cJSON_AddNumberToObject(root, "cycles", clock->getNCycles());
+  cJSON_AddNumberToObject(root, "workMinutes", clock->getWorkMinutes());
+  cJSON_AddNumberToObject(root, "restMinutes", clock->getRestMinutes());
+  cJSON_AddNumberToObject(root, "timeStamp", clock->getGlobalTimeStamp());
   return root;
 }
 
@@ -28,19 +43,34 @@ public:
       if (logger) {
         logger->reset();
       }
+#ifdef WS_REMOTE_DEBUG
+      server.sendHeader("Access-Control-Allow-Origin", "*");
+#endif
       server.send(200, "text/plain", "ok");
       printRequestLog(200);
     });
     server.on("/getTimeNow", HTTP_GET, [&]() {
       cJSON_ptr root(getTimeNow());
-      server.send(200, "application/json", cJSON_PrintUnformatted(root.get()));
+      str_ptr jsonstr(cJSON_PrintUnformatted(root.get()));
+#ifdef WS_REMOTE_DEBUG
+      server.sendHeader("Access-Control-Allow-Origin", "*");
+#endif
+      server.send(200, "application/json", jsonstr.get());
+      printRequestLog(200);
     });
     server.on("/getStatus", HTTP_GET, [&]() {
-      if (tomatoClock) {
-        server.send(200, "text/plain", tomatoClock->getStatusStr());
-      } else {
+      if (!tomatoClock) {
         server.send(500, "text/plain", "Invalid tomato clock pointer.");
+        printRequestLog(500);
+        return;
       }
+      cJSON_ptr root(getStatus(tomatoClock));
+      str_ptr jsonstr(cJSON_PrintUnformatted(root.get()));
+#ifdef WS_REMOTE_DEBUG
+      server.sendHeader("Access-Control-Allow-Origin", "*");
+#endif
+      server.send(200, "application/json", jsonstr.get());
+      printRequestLog(200);
     });
     server.onNotFound([&]() {
       bool ret = onRequest(server.uri());
@@ -121,6 +151,9 @@ protected:
         ? FileSystem.open(pathWithGz, "r")
         : FileSystem.open(path, "r");
       String contentType = getContentType(path);
+#ifdef WS_REMOTE_DEBUG
+      server.sendHeader("Access-Control-Allow-Origin", "*");
+#endif
       server.streamFile(file, contentType);
       file.close();
       return true;

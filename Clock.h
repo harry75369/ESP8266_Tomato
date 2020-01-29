@@ -22,6 +22,7 @@ private:
   State state;
   int nCycles;
   unsigned long timeStamp;
+  time_t globalTimeStamp;
   FileLogger *logger;
 
 public:
@@ -38,6 +39,7 @@ public:
     }
     state = CLK_WORKING;
     timeStamp = millis();
+    globalTimeStamp = time(nullptr);
     if (logger) {
       logger->onClockStartWorking(nCycles, cfg.workMinutes, addCycle);
     }
@@ -46,6 +48,7 @@ public:
   void startResting() {
     state = CLK_RESTING;
     timeStamp = millis();
+    globalTimeStamp = time(nullptr);
     if (logger) {
       logger->onClockStartResting(nCycles, cfg.restMinutes);
     }
@@ -92,6 +95,10 @@ public:
 
   inline unsigned long getTimeStamp() {
     return timeStamp;
+  }
+
+  inline int getGlobalTimeStamp() {
+    return (int)globalTimeStamp;
   }
 };
 
