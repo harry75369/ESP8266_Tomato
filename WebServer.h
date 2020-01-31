@@ -28,6 +28,22 @@ cJSON* getStatus(TomatoClock* clock) {
   return root;
 }
 
+bool updateClockConfig(TomatoClock* clock, cJSON* root) {
+  if (!clock) {
+    return false;
+  }
+  if (!root) {
+    return false;
+  }
+  cJSON* workNode = cJSON_GetObjectItemCaseSensitive(root, "workMinutes");
+  cJSON* restNode = cJSON_GetObjectItemCaseSensitive(root, "restMinutes");
+  if (workNode && cJSON_IsNumber(workNode)
+   && restNode && cJSON_IsNumber(restNode)) {
+    return clock->updateConfig(workNode->valuedouble, restNode->valuedouble);
+  }
+  return false;
+}
+
 class WebServer {
   ESP8266WebServer server;
   TomatoClock* tomatoClock;
@@ -70,6 +86,15 @@ public:
       server.sendHeader("Access-Control-Allow-Origin", "*");
 #endif
       server.send(200, "application/json", jsonstr.get());
+      printRequestLog(200);
+    });
+    server.on("/updateClockConfig", HTTP_POST, [&]() {
+      cJSON_ptr root(cJSON_Parse(server.arg("plain").c_str()));
+      if (updateClockConfig(tomatoClock, root.get())) {
+        server.send(200, "text/plain", "ok");
+      } else {
+        server.send(200, "text/plain", "failed");
+      }
       printRequestLog(200);
     });
     server.onNotFound([&]() {

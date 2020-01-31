@@ -100,6 +100,15 @@ public:
   inline int getGlobalTimeStamp() {
     return (int)globalTimeStamp;
   }
+
+  bool updateConfig(float w, float r) {
+    if (isStopped() && w > 0 && r > 0) {
+      cfg.workMinutes = w;
+      cfg.restMinutes = r;
+      return true;
+    }
+    return false;
+  }
 };
 
 #endif // __CLOCK_H__
