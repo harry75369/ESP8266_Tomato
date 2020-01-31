@@ -70,7 +70,7 @@ body {
   color: gray;
 }
 .hidden {
-  display: none;
+  display: none !important;
 }
 #main {
   position: relative;
@@ -136,13 +136,23 @@ body {
   border-radius: 0 0 20px 20px;
 }
 #system-tip {
+  position: absolute;
+  z-index: 100;
+  background-color: rgba(255,255,255,0.5);
   color: red;
+  font-size: 40px;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 </style>
 </head>
 <body>
+  <div id="system-tip">(Focus on me to start)</div>
   <div class="container">
-    <h1>ESP8266 Tomato Clock <span id="system-tip">(Focus on me to start)</span></h1>
+    <h1>ESP8266 Tomato Clock</h1>
     <div class="header">
       <div class="card">
         <div class="card-title">Time</div>
@@ -352,7 +362,7 @@ let short_poll;
 let long_poll;
 system_tip.onclick =
 window.onfocus = () => {
-  system_tip.innerText = '';
+  system_tip.className= 'hidden';
 
   // (re)init
   fetch_system_time();
@@ -369,7 +379,7 @@ window.onfocus = () => {
   }, 60 * 1000);
 };
 window.onblur = () => {
-  system_tip.innerText = '(Focus on me to start)';
+  system_tip.className = '';
 
   // clear timer
   clearInterval(short_poll);
