@@ -57,7 +57,7 @@ public:
   void stop() {
     nCycles -= 1;
     state = CLK_STOPPED;
-    if (logger) {
+    if (logger && nCycles < 1) {
       logger->onClockStop(nCycles);
     }
   }

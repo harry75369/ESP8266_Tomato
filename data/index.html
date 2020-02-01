@@ -72,10 +72,10 @@ body {
 .hidden {
   display: none !important;
 }
-#main {
+#main-area {
   position: relative;
   background: linen;
-  min-height: 300px;
+  height: 300px;
   border-radius: 0 0 20px 20px;
 }
 #main-label {
@@ -130,10 +130,46 @@ body {
 .progress-none {
   background-image: repeating-linear-gradient(135deg, transparent, transparent 25px, rgba(255,255,255,.5) 25px, rgba(255,255,255,.5) 50px) !important;
 }
-#logs {
+#logs-area {
   background: honeydew;
-  min-height: 300px;
+  height: 300px;
   border-radius: 0 0 20px 20px;
+  text-align: left;
+  overflow-y: auto;
+}
+#logs-area > ul {
+  margin: 0;
+  padding: 15px 120px;
+}
+#logs-area > ul li {
+  margin-top: 20px;
+}
+#logs-area > ul ul {
+  margin-top: 10px;
+}
+#logs-area > ul ul li {
+  margin-top: 5px;
+}
+.log-time {
+  margin-right: 10px;
+  font-family: monospace;
+}
+.take-minutes {
+  margin-left: 10px;
+  font-size: small;
+  color: lightgray;
+}
+.start-type-new {
+  margin-left: 10px;
+  font-size: small;
+  background-color: gold;
+  padding: 2px;
+}
+.start-type-continue {
+  margin-left: 10px;
+  font-size: small;
+  background: aquamarine;
+  padding: 2px;
 }
 #system-tip {
   position: absolute;
@@ -170,7 +206,7 @@ body {
         <div class="card-footer"><div class="card-button center-text" id="logs-button" title="Logs">▼</div></div>
       </div>
     </div>
-    <div id="main">
+    <div id="main-area">
       <div id="chart">
         <div id="division">
           <div class="center-text" id="working-part">
@@ -186,7 +222,7 @@ body {
       </div>
       <div id="main-label">Remaining cycles: <span id="remaining-cycles">-</span></div>
     </div>
-    <div id="logs" class="hidden">
+    <div id="logs-area" class="hidden">
     </div>
   </div>
   <script>
@@ -195,9 +231,9 @@ const current_time = document.getElementById('current-time');
 const current_date = document.getElementById('current-date');
 const current_status = document.getElementById('current-status');
 const finished_tomatoes = document.getElementById('finished-tomatoes');
-const main_area = document.getElementById('main');
+const main_area = document.getElementById('main-area');
 const main_button = document.getElementById('main-button');
-const logs_area = document.getElementById('logs');
+const logs_area = document.getElementById('logs-area');
 const logs_button = document.getElementById('logs-button');
 const remaining_cycles = document.getElementById('remaining-cycles');
 const working_part = document.getElementById('working-part');
@@ -210,23 +246,28 @@ const chart_full_width = 810;
 let system_time = 0;
 let system_logs = {};
 
+const show_time = (t) => {
+  const h = `${t.getHours()}`.padStart(2, '0');
+  const m = `${t.getMinutes()}`.padStart(2, '0');
+  const s = `${t.getSeconds()}`.padStart(2, '0');
+  return `${h}:${m}:${s}`;
+};
+
+const show_date = (t, showWeekDay = true) => {
+  const y = `${t.getFullYear()}`;
+  const m = `${t.getMonth() + 1}`.padStart(2, '0');
+  const d = `${t.getDate()}`.padStart(2, '0');
+  const wd = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][t.getDay()];
+  if (showWeekDay) {
+    return `${y}-${m}-${d} ${wd}`;
+  }
+  return `${y}-${m}-${d}`;
+};
+
 const display_system_time = () => {
-  const display_time = (t) => {
-    const h = `${t.getHours()}`.padStart(2, '0');
-    const m = `${t.getMinutes()}`.padStart(2, '0');
-    const s = `${t.getSeconds()}`.padStart(2, '0');
-    current_time.innerText = `${h}:${m}:${s}`;
-  };
-  const display_date = (t) => {
-    const y = `${t.getFullYear()}`;
-    const m = `${t.getMonth() + 1}`.padStart(2, '0');
-    const d = `${t.getDate()}`.padStart(2, '0');
-    const wd = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][t.getDay()];
-    current_date.innerText = `${y}-${m}-${d} ${wd}`;
-  };
   const t = new Date(system_time);
-  display_time(t);
-  display_date(t);
+  current_time.innerText = show_time(t);
+  current_date.innerText = show_date(t);
 };
 
 const reset_tomato_details = () => {
@@ -307,12 +348,72 @@ const display_tomato_status = (status) => {
 };
 
 const display_statistics = () => {
-  const rests = system_logs.filter((rec) => rec.action == "clockStartResting");
-  const stops = system_logs.filter((rec) => rec.action == "clockStop");
-  finished_tomatoes.innerText = Math.max(rests.length, stops.length);
+  const rests = system_logs.filter((rec) => rec.action == 'clockStartResting');
+  finished_tomatoes.innerText = rests.length;
 };
 
 const display_logs_by_date = () => {
+  const days = [...new Set(system_logs.map((rec) => show_date(new Date(rec.time_t * 1000), false)))];
+  days.sort();
+
+  const list = document.createElement('ul');
+
+  days.reverse().forEach((d) => {
+    const item = document.createElement('li');
+    const sublist = document.createElement('ul');
+    item.innerText = d;
+    item.appendChild(sublist);
+    list.appendChild(item);
+
+    const min_time_t = (new Date(`${d} 00:00:00`)).getTime() / 1000.;
+    const max_time_t = (new Date(`${d} 23:59:59`)).getTime() / 1000.;
+    const recs = system_logs.filter((rec) => (rec.time_t > min_time_t && rec.time_t < max_time_t));
+    recs.sort((a, b) => a.time_t < b.time_t);
+
+    const show_record = (rec) => {
+      let res = '';
+      const time = `<span class="log-time">${show_time(new Date(1000 * rec.time_t))}</span>`;
+      res += time;
+
+      if (rec.action) {
+        res += {
+          'systemStart': '<span class="unknown-status">system start</span>',
+          'clockStartWorking': '<span class="working-status">start working</span>',
+          'clockStartResting': '<span class="resting-status">start resting</span>',
+          'clockStop': '<span class="stopped-status">stop</span>',
+        }[rec.action];
+      }
+
+      if (rec.startType) {
+        res += start_type = {
+          'new': '<span class="start-type-new">new</span>',
+          'continue': '<span class="start-type-continue">continue</span>',
+        }[rec.startType];
+      }
+
+      if (rec.takeMinutes) {
+        res += `<span class="take-minutes">${
+          (rec.takeMinutes < 1)
+            ? rec.takeMinutes.toFixed(2)
+            : rec.takeMinutes.toFixed(0)
+        } mins</span>`;
+      }
+
+      return res;
+    };
+
+    recs.forEach((r) => {
+      const subitems = document.createElement('li');
+      subitems.innerHTML = show_record(r);
+      sublist.appendChild(subitems);
+    });
+  });
+
+  // update logs area
+  if (logs_area.hasChildNodes()) {
+    logs_area.innerHTML = '';
+  }
+  logs_area.appendChild(list);
 };
 
 const host = '';
