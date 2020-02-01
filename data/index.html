@@ -368,7 +368,7 @@ const display_logs_by_date = () => {
     const min_time_t = (new Date(`${d}T00:00:00`)).getTime() / 1000.;
     const max_time_t = (new Date(`${d}T23:59:59`)).getTime() / 1000.;
     const recs = system_logs.filter((rec) => (rec.time_t > min_time_t && rec.time_t < max_time_t));
-    recs.sort((a, b) => a.time_t < b.time_t);
+    recs.sort((a, b) => (a.time_t > b.time_t) ? -1 : 1);
 
     const show_record = (rec) => {
       let res = '';
