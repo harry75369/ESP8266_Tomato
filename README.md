@@ -20,8 +20,6 @@ WebUI:
 
 ## Build Instructions
 
-Note: Please fill in the WiFi SSID and password in the `ESP8266_Tomato.ino` file.
-
 1. Use Arduino IDE to open this project and compile/upload program to ESP8266.
 2. Use `ESP8266LittleFS` plugin to upload files under `data` directory to ESP8266.
 3. Done!
@@ -34,6 +32,9 @@ When the power is on:
 
 1. The red LED blinks quickly until filesystem is ready.
 2. The builtin blue LED blinks quickly until WiFi is connected.
+    - If WiFi is not connected within 30 seconds, it goes into AP mode for user to fill in new WiFi config.
+    - The red LED will blink slowly.
+    - Once WiFi config is updated, AP mode is turned off and it goes back to the second step.
 3. The green LED blinks quickly until time is synchronized.
 
 After initialization is done, the builtin blue LED will blink slowly to indicate the system is ready.
@@ -41,7 +42,7 @@ After initialization is done, the builtin blue LED will blink slowly to indicate
 ### 2) Start to work
 
 - You can press the blue button multiple times, each press means adding a full tomato clock cycle.
-- Each time the button is pressed, it beeps to indicate how many cycles there are.
+- Each time the blue button is pressed, it beeps to indicate how many cycles there are.
 - The green LED will be turned on to indicate the working status.
 
 ### 3) Start to rest
@@ -67,7 +68,7 @@ After initialization is done, the builtin blue LED will blink slowly to indicate
 ### Notes
 
 - All music must be turned off manually by pressing the red button.
-- Initially, the work duration of each tomato cycle is `25` minutes, and the rest duration is `5` minutes. This is only configurable through code.
+- Initially, the work duration of each tomato cycle is `25` minutes, and the rest duration is `5` minutes.
 
 ## WebUI Instructions
 
@@ -79,4 +80,6 @@ Please note the WebUI is for visualization purpose only. All controllers are on 
 
 # License
 
-Chaoya Li. Copyright 2020. Under MIT license.
+Copyright © 2020 Chaoya Li.
+
+Released under MIT license.
