@@ -18,6 +18,10 @@ class OneShot {
 public:
   OneShot() : triggered(false) {}
 
+  void reset() {
+    triggered = false;
+  }
+
   void trigger(const std::function<void()>& func) {
     TRIGGER_BODY();
   }

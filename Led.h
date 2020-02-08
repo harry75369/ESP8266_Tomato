@@ -5,19 +5,21 @@ class Led {
 private:
   int pin;
   int state;
+  bool reversed;
 
 public:
-  Led(int pin)
+  Led(int pin, bool reversed = false)
     : pin(pin)
     , state(0)
+    , reversed(reversed)
   {}
 
   void turnOn() {
-    state = 1;
+    state = reversed ? 0 : 1;
   }
 
   void turnOff() {
-    state = 0;
+    state = reversed ? 1 : 0;
   }
 
   void toggle() {
@@ -34,8 +36,8 @@ private:
   unsigned long lastTime;
 
 public:
-  BlinkLed(int pin)
-    : Led(pin)
+  BlinkLed(int pin, bool reversed = false)
+    : Led(pin, reversed)
     , lastTime(millis())
   {}
 

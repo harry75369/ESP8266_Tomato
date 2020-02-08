@@ -72,7 +72,7 @@ public:
     }
   }
 
-  void reset() {
+  virtual void reset() {
     root.reset(cJSON_CreateArray());
     write();
   }

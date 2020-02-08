@@ -4,7 +4,9 @@
 #include "Clock.h"
 #include "FileLogger.h"
 #include "FileSystem.h"
+#include "WiFiConfig.h"
 #include <ESP8266WebServer.h>
+#include <functional>
 
 #define WS_REMOTE_DEBUG
 
@@ -44,15 +46,33 @@ bool updateClockConfig(TomatoClock* clock, cJSON* root) {
   return false;
 }
 
+void updateWiFiConfig(WiFiConfig* wifiConfig, cJSON* root, const std::function<void()>& succeed, const std::function<void()>& fail) {
+  if (!wifiConfig || !root) {
+    return fail();
+  }
+  cJSON* ssidNode = cJSON_GetObjectItemCaseSensitive(root, "ssid");
+  cJSON* passNode = cJSON_GetObjectItemCaseSensitive(root, "pass");
+  if (ssidNode && cJSON_IsString(ssidNode)
+   && passNode && cJSON_IsString(passNode)) {
+    succeed();
+    delay(500);
+    wifiConfig->saveStaConfig(ssidNode->valuestring, passNode->valuestring);
+    return;
+   }
+  return fail();
+}
+
 class WebServer {
   ESP8266WebServer server;
   TomatoClock* tomatoClock;
+  WiFiConfig* wifiConfig;
   FileLogger* logger;
 
 public:
-  WebServer(TomatoClock* c, FileLogger* p)
+  WebServer(TomatoClock* c = nullptr, WiFiConfig *w = nullptr, FileLogger* p = nullptr)
     : server(80)
     , tomatoClock(c)
+    , wifiConfig(w)
     , logger(p)
   {
     server.on("/clearLogs", HTTP_PUT, [&]() {
@@ -95,6 +115,15 @@ public:
       } else {
         server.send(200, "text/plain", "failed");
       }
+      printRequestLog(200);
+    });
+    server.on("/updateWiFiConfig", HTTP_POST, [&]() {
+      cJSON_ptr root(cJSON_Parse(server.arg("plain").c_str()));
+      updateWiFiConfig(wifiConfig, root.get(), [&]() {
+        server.send(200, "text/plain", "ok");
+      }, [&]() {
+        server.send(200, "text/plain", "failed");
+      });
       printRequestLog(200);
     });
     server.onNotFound([&]() {

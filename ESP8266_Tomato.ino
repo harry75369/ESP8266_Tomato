@@ -12,9 +12,8 @@
 #include <TZ.h>
 #include <time.h>
 
-#define WIFI_SSID "WIFI_SSID"
-#define WIFI_PASS "WIFI_PASS"
-
+#define TOMATO_AP_SSID "ESP8266_Tomato_Clock"
+#define TOMATO_AP_PASS "12345678"
 #define TOMATO_HOST "tomato"
 
 // pin mappings for WeMos D1 mini
@@ -43,15 +42,16 @@ Button redButton(redButtonPin);
 Button blueButton(blueButtonPin);
 BlinkLed redLed(redLedPin);
 BlinkLed greenLed(greenLedPin);
-BlinkLed blueLed(blueLedPin);
+BlinkLed blueLed(blueLedPin, true);
 Ticker ledTicker;
 Ticker musicTicker;
 Ticker clockTicker;
 Ticker mdnsTicker;
 bool fsReady = false;
 FileLogger logger("/logs.json");
+WiFiConfig wifiConfig("/wifi.json");
 TomatoClock tomatoClock(&logger);
-WebServer server(&tomatoClock, &logger);
+WebServer server(&tomatoClock, &wifiConfig, &logger);
 
 void tellCycles(int counter) {
   static int lastCounter = 0;
@@ -144,6 +144,11 @@ void setup() {
 
   // start web server
   server.start();
+
+  // init leds
+  redLed.turnOff();
+  greenLed.turnOff();
+  blueLed.turnOff();
 }
 
 bool isReady() {
@@ -161,15 +166,52 @@ bool isReady() {
     oneShot1.trigger([&]() {
       Serial.println("[INFO] File logger is ready.");
       redLed.turnOff();
+      wifiConfig.init();
+    });
+  }
+
+  static OneShot startWiFiAP;
+  static OneShot startWiFiSta;
+  static unsigned long wifiStaStarted;
+
+  char* staSsid = nullptr;
+  char* staPass = nullptr;
+  wifiConfig.getStaConfig(&staSsid, &staPass);
+
+  // wait until wifi config is ready
+  if (!staSsid || !staPass) {
+    startWiFiAP.trigger([&]() {
+      // if no config, start AP to let user fill in
+      WiFi.mode(WIFI_AP);
+      WiFi.softAP(TOMATO_AP_SSID, TOMATO_AP_PASS);
+      Serial.print("[INFO] Started Soft AP: ");
+      Serial.println(TOMATO_AP_SSID);
+    });
+    redLed.blink(1);
+    return false;
+  } else {
+    startWiFiSta.trigger([&]() {
+      WiFi.softAPdisconnect(true);
       WiFi.mode(WIFI_STA);
-      WiFi.begin(WIFI_SSID, WIFI_PASS);
+      WiFi.begin(staSsid, staPass);
       Serial.print("[INFO] Connecting to Wifi: ");
-      Serial.println(WIFI_SSID);
+      Serial.println(staSsid);
+      wifiStaStarted = millis();
+      redLed.turnOff();
     });
   }
 
   // wait until wifi is ready
   if (WiFi.status() != WL_CONNECTED) {
+    // try this SSID for 30 seconds before reset
+    if (millis() - wifiStaStarted > 1000 * 30) {
+      WiFi.disconnect(true);
+      startWiFiSta.reset();
+      startWiFiAP.reset();
+      wifiConfig.reset();
+      blueLed.turnOff();
+      return false;
+    }
     blueLed.blink(0.1);
     return false;
   } else {
@@ -177,7 +219,7 @@ bool isReady() {
     oneShot2.trigger([&]() {
       Serial.print("[INFO] Wifi connected: ");
       Serial.println(WiFi.localIP());
-      blueLed.turnOn();
+      blueLed.turnOff();
       Serial.println("[INFO] Synchronizing time...");
       delay(100); // wait network to stablize
       configTime(TZ_Asia_Shanghai, "cn.ntp.org.cn");
@@ -214,13 +256,13 @@ bool isReady() {
 }
 
 void loop() {
+  // handle web server requests
+  server.handleClient();
+
   // wait system to be ready
   if (!isReady()) {
     return;
   }
-
-  // handle web server requests
-  server.handleClient();
 
   // start working
   if (blueButton.isPressed()) {
@@ -240,6 +282,6 @@ void loop() {
   if (tomatoClock.isStopped()) {
     blueLed.blink(1);
   } else {
-    blueLed.turnOn();
+    blueLed.turnOff();
   }
 }
