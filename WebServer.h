@@ -63,7 +63,12 @@ void updateWiFiConfig(WiFiConfig* wifiConfig, cJSON* root, const std::function<v
 }
 
 class WebServer {
+  enum class ServerMode {
+    NORMAL,
+    CONFIG,
+  };
   ESP8266WebServer server;
+  ServerMode mode;
   TomatoClock* tomatoClock;
   WiFiConfig* wifiConfig;
   FileLogger* logger;
@@ -71,6 +76,7 @@ class WebServer {
 public:
   WebServer(TomatoClock* c = nullptr, WiFiConfig *w = nullptr, FileLogger* p = nullptr)
     : server(80)
+    , mode(ServerMode::NORMAL)
     , tomatoClock(c)
     , wifiConfig(w)
     , logger(p)
@@ -135,6 +141,14 @@ public:
     });
   }
 
+  void setNormalMode() {
+    mode = ServerMode::NORMAL;
+  }
+
+  void setConfigMode() {
+    mode = ServerMode::CONFIG;
+  }
+
   void start() {
     server.begin();
   }
@@ -197,7 +211,11 @@ protected:
 
   bool onRequest(String path) {
     if (path.endsWith("/")) {
-      path += "index.html";
+      if (mode == ServerMode::NORMAL) {
+        path += "index.html";
+      } else {
+        path += "config.html";
+      }
     }
     String pathWithGz = path + ".gz";
     if (FileSystem.exists(path) || FileSystem.exists(pathWithGz)) {

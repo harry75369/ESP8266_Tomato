@@ -186,6 +186,7 @@ bool isReady() {
       WiFi.softAP(TOMATO_AP_SSID, TOMATO_AP_PASS);
       Serial.print("[INFO] Started Soft AP: ");
       Serial.println(TOMATO_AP_SSID);
+      server.setConfigMode();
     });
     redLed.blink(1);
     return false;
@@ -196,6 +197,7 @@ bool isReady() {
       WiFi.begin(staSsid, staPass);
       Serial.print("[INFO] Connecting to Wifi: ");
       Serial.println(staSsid);
+      server.setNormalMode();
       wifiStaStarted = millis();
       redLed.turnOff();
     });
