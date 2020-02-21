@@ -183,6 +183,12 @@ body {
   justify-content: center;
   align-items: center;
 }
+.clear-button {
+  color: blue;
+  margin: 15px;
+  float: right;
+  cursor: pointer;
+}
 </style>
 </head>
 <body>
@@ -361,14 +367,14 @@ const display_logs_by_date = () => {
   days.reverse().forEach((d) => {
     const item = document.createElement('li');
     const sublist = document.createElement('ul');
-    item.innerText = d;
-    item.appendChild(sublist);
-    list.appendChild(item);
-
     const min_time_t = (new Date(`${d}T00:00:00`)).getTime() / 1000.;
     const max_time_t = (new Date(`${d}T23:59:59`)).getTime() / 1000.;
     const recs = system_logs.filter((rec) => (rec.time_t > min_time_t && rec.time_t < max_time_t));
-    recs.sort((a, b) => (a.time_t > b.time_t) ? -1 : 1);
+    const rests = recs.filter((rec) => rec.action == 'clockStartResting');
+
+    item.innerText = `${d} (Finished: ${rests.length})`;
+    item.appendChild(sublist);
+    list.appendChild(item);
 
     const show_record = (rec) => {
       let res = '';
@@ -402,6 +408,7 @@ const display_logs_by_date = () => {
       return res;
     };
 
+    recs.sort((a, b) => (a.time_t > b.time_t) ? -1 : 1);
     recs.forEach((r) => {
       const subitems = document.createElement('li');
       subitems.innerHTML = show_record(r);
@@ -413,6 +420,22 @@ const display_logs_by_date = () => {
   if (logs_area.hasChildNodes()) {
     logs_area.innerHTML = '';
   }
+
+  // add clear button
+  const clearButton = document.createElement('a');
+  clearButton.innerText = 'Clear Logs';
+  clearButton.className = 'clear-button';
+  clearButton.onclick = async () => {
+    const res = await fetch(`${host}/clearLogs`, { method: 'PUT' });
+    if (res.ok) {
+      fetch_system_logs();
+    } else {
+      alert('Failed to clear logs!');
+    }
+  };
+  logs_area.append(clearButton);
+
+  // append logs
   logs_area.appendChild(list);
 };
 
