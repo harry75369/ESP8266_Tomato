@@ -5,8 +5,6 @@
 #include "cJSON.h"
 #include <memory>
 
-#define MAX_FILE_SIZE (1024 * 1024)
-
 struct CJsonDeleter {
   void operator()(cJSON* json) {
     if (json) {
@@ -50,7 +48,7 @@ public:
       Serial.print("[INFO] Initializing json from file: ");
       Serial.println(fileName.c_str());
       File f = FileSystem.open(fileName.c_str(), "r");
-      if (f.size() > 0 && f.size() < MAX_FILE_SIZE) {
+      if (f.size() > 0) {
         String content = f.readString();
         cJSON* p = cJSON_Parse(content.c_str());
         if (p) {
@@ -59,8 +57,6 @@ public:
         } else {
           Serial.println("[ERROR] Failed to parse this file as json.");
         }
-      } else {
-        Serial.println("[WARN] Empty file or exceeds max file size.");
       }
       f.close();
     }
